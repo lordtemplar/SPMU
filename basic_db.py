@@ -56,31 +56,74 @@ def transform_daymaster_dataframe(df):
 # ฟังก์ชันแปลง DataFrame เป็น List of Dict สำหรับ Calendar Profiles
 # ----------------------
 def transform_calendar_dataframe(df, month_name):
+    thai_months = {
+        "มกราคม": 1,
+        "กุมภาพันธ์": 2,
+        "มีนาคม": 3,
+        "เมษายน": 4,
+        "พฤษภาคม": 5,
+        "มิถุนายน": 6,
+        "กรกฎาคม": 7,
+        "สิงหาคม": 8,
+        "กันยายน": 9,
+        "ตุลาคม": 10,
+        "พฤศจิกายน": 11,
+        "ธันวาคม": 12
+    }
+
     records = []
     for col in df.columns:
         col_data = df[col].dropna().tolist()
         if len(col_data) >= 19:
-            # ดึงวันและวันที่
-            full_date_text = col_data[0]
-            day_name = full_date_text.split("ที่")[0].strip()
-            date_text = full_date_text.split("ที่")[-1].strip()
-            date_obj = datetime.strptime(date_text.replace(" พ.ศ. ", "/"), "%d %B/%Y")
-            date_obj = date_obj.replace(year=date_obj.year - 543)
+            full_date_text = col_data[0].strip()
 
-            record = {
-                "date": date_obj.strftime("%Y-%m-%d"),
-                "day_name": day_name,
-                "theme": col_data[1],
-                "power_of_day": col_data[3],
-                "seasonal_effect": col_data[5],
-                "highlight_of_day": col_data[7],
-                "things_to_do": col_data[10],
-                "things_to_avoid": col_data[12],
-                "zodiac_relations": col_data[14],
-                "lucky_colors": col_data[16],
-                "summary": col_data[18]
-            }
-            records.append(record)
+            if "ที่" not in full_date_text:
+                st.warning(f"❗️ Skipped column {col}: missing 'ที่' in text {full_date_text}")
+                continue
+
+            day_part, date_part = full_date_text.split("ที่", 1)
+            day_name = day_part.strip()
+            date_text = date_part.strip()
+
+            try:
+                date_text = date_text.replace("พ.ศ.", "").replace(" พ.ศ.", "").strip()
+                parts = date_text.split()
+
+                if len(parts) != 3:
+                    st.warning(f"❗️ Skipped invalid date format: {date_text}")
+                    continue
+
+                day = int(parts[0])
+                month_thai = parts[1]
+                year_thai = int(parts[2])
+
+                month = thai_months.get(month_thai)
+                if not month:
+                    st.warning(f"❗️ Unknown month: {month_thai}")
+                    continue
+
+                year = year_thai - 543
+                date_obj = datetime(year, month, day)
+
+                record = {
+                    "date": date_obj.strftime("%Y-%m-%d"),
+                    "day_name": day_name,
+                    "theme": col_data[1],
+                    "power_of_day": col_data[3],
+                    "seasonal_effect": col_data[5],
+                    "highlight_of_day": col_data[7],
+                    "things_to_do": col_data[10],
+                    "things_to_avoid": col_data[12],
+                    "zodiac_relations": col_data[14],
+                    "lucky_colors": col_data[16],
+                    "summary": col_data[18]
+                }
+                records.append(record)
+
+            except Exception as e:
+                st.warning(f"❗️ Error parsing date: {date_text} : {e}")
+                continue
+
     return records
 
 # ----------------------
