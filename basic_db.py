@@ -75,22 +75,34 @@ def transform_calendar_dataframe(df, month_name):
     for col in df.columns:
         col_data = df[col].dropna().tolist()
         if len(col_data) >= 19:
-            full_date_text = col_data[0]
-            day_name = full_date_text.split("ที่")[0].strip()
-            date_text = full_date_text.split("ที่")[-1].strip()
+            full_date_text = col_data[0].strip()
+            if "ที่" not in full_date_text:
+                st.warning(f"❗️ ข้ามคอลัมน์ {col}: ไม่พบคำว่า 'ที่' ใน {full_date_text}")
+                continue
+
+            day_part, date_part = full_date_text.split("ที่", 1)
+            day_name = day_part.strip()
+            date_text = date_part.strip()
 
             try:
-                parts = date_text.replace(" พ.ศ.", "").split()
+                parts = date_text.replace("พ.ศ.", "").replace(" พ.ศ.", "").split()
+                if len(parts) != 3:
+                    st.warning(f"❗️ ข้าม {date_text}: format ไม่ถูกต้อง")
+                    continue
+
                 day = int(parts[0])
                 month_thai = parts[1]
                 year_thai = int(parts[2])
 
-                month = thai_months.get(month_thai, 1)
-                year = year_thai - 543
+                month = thai_months.get(month_thai)
+                if not month:
+                    st.warning(f"❗️ ไม่รู้จักชื่อเดือน: {month_thai}")
+                    continue
 
+                year = year_thai - 543
                 date_obj = datetime(year, month, day)
             except Exception as e:
-                st.error(f"❗️ Error parsing date from text: {date_text}")
+                st.warning(f"❗️ Error parsing date: {date_text} : {str(e)}")
                 continue
 
             record = {
