@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
 from datetime import datetime
-import re
 
 # ----------------------
 # ตั้งค่าการเชื่อมต่อ MongoDB
@@ -13,15 +12,6 @@ DB_NAME = "your_database"
 # Connect MongoDB
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
-
-# ----------------------
-# ฟังก์ชันช่วยค้นหาวันที่จากข้อมูลคอลัมน์
-# ----------------------
-def find_date_row(col_data):
-    for text in col_data:
-        if re.search(r"วัน(จันทร์|อังคาร|พุธ|พฤหัสบดี|ศุกร์|เสาร์|อาทิตย์)ที่", text):
-            return text.strip()
-    return None
 
 # ----------------------
 # ฟังก์ชันแปลง DataFrame เป็น List of Dict สำหรับ Zodiac Profiles
@@ -85,10 +75,10 @@ def transform_calendar_dataframe(df, month_name):
     for col in df.columns:
         col_data = df[col].dropna().tolist()
         if len(col_data) >= 19:
-            full_date_text = find_date_row(col_data)
+            full_date_text = col_data[0].strip()
 
-            if not full_date_text:
-                st.warning(f"❗️ Skipped column {col}: ไม่มีวัน/วันที่ในข้อมูล")
+            if not (full_date_text.startswith("วัน") and "ที่" in full_date_text):
+                st.warning(f"❗️ Skipped column {col}: ข้อความไม่ใช่วัน/วันที่ => {full_date_text}")
                 continue
 
             day_part, date_part = full_date_text.split("ที่", 1)
