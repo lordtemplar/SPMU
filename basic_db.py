@@ -20,15 +20,15 @@ def transform_zodiac_dataframe(df):
     records = []
     for _, row in df.iterrows():
         record = {
-            "gender": row["เพศ"],
-            "zodiac": row["นักษัตร"],
-            "characteristics": row["ลักษณะโดยทั่วไป"],
-            "strengths": row["จุดแข็ง"],
-            "weaknesses": row["จุดอ่อน"],
-            "advice_for_balance": row["คำแนะนำเพื่อสร้างสมดุลในชีวิต"],
-            "charm": row["เสน่ห์ที่ดึงดูดใจ"],
-            "zodiac_relations": row["นักษัตรสัมพันธ์และปะทะ"],
-            "summary": row["สรุป"]
+            "gender": row["เพศ"].strip(),
+            "zodiac": row["นักษัตร"].strip(),
+            "characteristics": str(row["ลักษณะโดยทั่วไป"]).strip(),
+            "strengths": str(row["จุดแข็ง"]).strip(),
+            "weaknesses": str(row["จุดอ่อน"]).strip(),
+            "advice_for_balance": str(row["คำแนะนำเพื่อสร้างสมดุลในชีวิต"]).strip(),
+            "charm": str(row["เสน่ห์ที่ดึงดูดใจ"]).strip(),
+            "zodiac_relations": str(row["นักษัตรสัมพันธ์และปะทะ"]).strip(),
+            "summary": str(row["สรุป"]).strip()
         }
         records.append(record)
     return records
@@ -38,8 +38,8 @@ def transform_daymaster_dataframe(df):
 
     def split_or_single(text):
         text = str(text).strip()
-        if "-" in text:
-            return [item.strip() for item in text.split("-") if item.strip()]
+        if "•" in text:
+            return [item.strip("• ").strip() for item in text.split("•") if item.strip()]
         else:
             return [text] if text else []
 
@@ -47,12 +47,12 @@ def transform_daymaster_dataframe(df):
         record = {
             "gender": row["เพศ"].strip(),
             "day_master": row["Day Master"].strip(),
-            "characteristics": str(row["ลักษณะโดยทั่วไป"]).strip(),  # เก็บเป็นข้อความธรรมดา
-            "strengths": split_or_single(row["จุดแข็ง"]),  # ทำเป็น List ตามกติกา
-            "weaknesses": split_or_single(row["จุดอ่อน"]),  # ทำเป็น List ตามกติกา
-            "advice_for_balance": split_or_single(row["คำแนะนำเพื่อสร้างสมดุล"]),  # ทำเป็น List ตามกติกา
-            "charm": str(row["เสน่ห์ที่ดึงดูดใจ"]).strip(),  # เก็บเป็นข้อความธรรมดา
-            "summary": str(row["สรุป"]).strip()  # เก็บเป็นข้อความธรรมดา
+            "characteristics": str(row["ลักษณะโดยทั่วไป"]).strip(),  # เก็บเป็นข้อความยาว
+            "strengths": split_or_single(row["จุดแข็ง"]),  # ✅ แตกเป็น List
+            "weaknesses": split_or_single(row["จุดอ่อน"]),  # ✅ แตกเป็น List
+            "advice_for_balance": split_or_single(row["คำแนะนำเพื่อสร้างสมดุล"]),  # ✅ แตกเป็น List
+            "charm": str(row["เสน่ห์ที่ดึงดูดใจ"]).strip(),  # ข้อความยาว
+            "summary": str(row["สรุป"]).strip()  # ข้อความยาว
         }
         records.append(record)
 
