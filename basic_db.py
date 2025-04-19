@@ -56,54 +56,16 @@ def transform_daymaster_dataframe(df):
 # ฟังก์ชันแปลง DataFrame เป็น List of Dict สำหรับ Calendar Profiles
 # ----------------------
 def transform_calendar_dataframe(df, month_name):
-    thai_months = {
-        "มกราคม": 1,
-        "กุมภาพันธ์": 2,
-        "มีนาคม": 3,
-        "เมษายน": 4,
-        "พฤษภาคม": 5,
-        "มิถุนายน": 6,
-        "กรกฎาคม": 7,
-        "สิงหาคม": 8,
-        "กันยายน": 9,
-        "ตุลาคม": 10,
-        "พฤศจิกายน": 11,
-        "ธันวาคม": 12
-    }
-
     records = []
     for col in df.columns:
         col_data = df[col].dropna().tolist()
         if len(col_data) >= 19:
-            full_date_text = col_data[0].strip()
-            if "ที่" not in full_date_text:
-                st.warning(f"❗️ ข้ามคอลัมน์ {col}: ไม่พบคำว่า 'ที่' ใน {full_date_text}")
-                continue
-
-            day_part, date_part = full_date_text.split("ที่", 1)
-            day_name = day_part.strip()
-            date_text = date_part.strip()
-
-            try:
-                parts = date_text.replace("พ.ศ.", "").replace(" พ.ศ.", "").split()
-                if len(parts) != 3:
-                    st.warning(f"❗️ ข้าม {date_text}: format ไม่ถูกต้อง")
-                    continue
-
-                day = int(parts[0])
-                month_thai = parts[1]
-                year_thai = int(parts[2])
-
-                month = thai_months.get(month_thai)
-                if not month:
-                    st.warning(f"❗️ ไม่รู้จักชื่อเดือน: {month_thai}")
-                    continue
-
-                year = year_thai - 543
-                date_obj = datetime(year, month, day)
-            except Exception as e:
-                st.warning(f"❗️ Error parsing date: {date_text} : {str(e)}")
-                continue
+            # ดึงวันและวันที่
+            full_date_text = col_data[0]
+            day_name = full_date_text.split("ที่")[0].strip()
+            date_text = full_date_text.split("ที่")[-1].strip()
+            date_obj = datetime.strptime(date_text.replace(" พ.ศ. ", "/"), "%d %B/%Y")
+            date_obj = date_obj.replace(year=date_obj.year - 543)
 
             record = {
                 "date": date_obj.strftime("%Y-%m-%d"),
