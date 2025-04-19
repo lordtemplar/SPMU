@@ -26,6 +26,15 @@ def clean_record(record):
     return cleaned
 
 # ----------------------
+# ฟังก์ชันช่วยค้นหาวันที่ที่แท้จริงจากข้อมูลคอลัมน์
+# ----------------------
+def find_real_date_text(col_data):
+    for text in col_data:
+        if text.startswith("วัน") and "ที่" in text:
+            return text.strip()
+    return None
+
+# ----------------------
 # ฟังก์ชันแปลง DataFrame เป็น List of Dict สำหรับ Zodiac Profiles
 # ----------------------
 def transform_zodiac_dataframe(df):
@@ -87,10 +96,10 @@ def transform_calendar_dataframe(df, month_name):
     for col in df.columns:
         col_data = df[col].dropna().tolist()
         if len(col_data) >= 19:
-            full_date_text = col_data[0].strip()
+            full_date_text = find_real_date_text(col_data)
 
-            if not (full_date_text.startswith("วัน") and "ที่" in full_date_text):
-                st.warning(f"❗️ Skipped column {col}: ข้อความไม่ใช่วัน/วันที่ => {full_date_text}")
+            if not full_date_text:
+                st.warning(f"❗️ Skipped column {col}: ไม่มีวัน/วันที่ที่ถูกต้องในข้อมูล")
                 continue
 
             day_part, date_part = full_date_text.split("ที่", 1)
