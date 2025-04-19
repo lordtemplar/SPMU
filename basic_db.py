@@ -3,40 +3,19 @@ import pandas as pd
 from pymongo import MongoClient
 from datetime import datetime
 
-# ----------------------
-# ตั้งค่าการเชื่อมต่อ MongoDB
-# ----------------------
-MONGO_URI = st.secrets["MONGO_URI"]  # เก็บ Secret นี้ใน Streamlit Cloud Settings
+# ---------------------------
+# เชื่อม MongoDB
+# ---------------------------
+MONGO_URI = st.secrets["MONGO_URI"]
 DB_NAME = "your_database"
 
-# Connect MongoDB
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 
-# ----------------------
-# ฟังก์ชันสำหรับทำความสะอาดข้อมูลก่อน Insert
-# ----------------------
-def clean_record(record):
-    cleaned = {}
-    for key, value in record.items():
-        if isinstance(value, str):
-            cleaned[key] = value.strip()
-        else:
-            cleaned[key] = value
-    return cleaned
+# ---------------------------
+# ฟังก์ชันแปลงข้อมูล
+# ---------------------------
 
-# ----------------------
-# ฟังก์ชันช่วยค้นหาวันที่ที่แท้จริงจากข้อมูลคอลัมน์
-# ----------------------
-def find_real_date_text(col_data):
-    for text in col_data:
-        if text.startswith("วัน") and "ที่" in text:
-            return text.strip()
-    return None
-
-# ----------------------
-# ฟังก์ชันแปลง DataFrame เป็น List of Dict สำหรับ Zodiac Profiles
-# ----------------------
 def transform_zodiac_dataframe(df):
     records = []
     for _, row in df.iterrows():
@@ -54,9 +33,6 @@ def transform_zodiac_dataframe(df):
         records.append(record)
     return records
 
-# ----------------------
-# ฟังก์ชันแปลง DataFrame เป็น List of Dict สำหรับ Day Master Profiles
-# ----------------------
 def transform_daymaster_dataframe(df):
     records = []
     for _, row in df.iterrows():
@@ -73,9 +49,6 @@ def transform_daymaster_dataframe(df):
         records.append(record)
     return records
 
-# ----------------------
-# ฟังก์ชันแปลง DataFrame เป็น List of Dict สำหรับ Calendar Profiles
-# ----------------------
 def transform_calendar_dataframe(df, month_name):
     thai_months = {
         "มกราคม": 1,
@@ -96,35 +69,26 @@ def transform_calendar_dataframe(df, month_name):
     for col in df.columns:
         col_data = df[col].dropna().tolist()
         if len(col_data) >= 19:
-            full_date_text = find_real_date_text(col_data)
-
-            if not full_date_text:
-                st.warning(f"❗️ Skipped column {col}: ไม่มีวัน/วันที่ที่ถูกต้องในข้อมูล")
+            full_date_text = col_data[0].strip()
+            parts = full_date_text.split()
+            if len(parts) < 5:
+                st.warning(f"❗️ วันที่ format ไม่ครบ: {full_date_text}")
                 continue
 
-            day_part, date_part = full_date_text.split("ที่", 1)
-            day_name = day_part.strip()
-            date_text = date_part.strip()
-
             try:
-                date_text = date_text.replace("พ.ศ.", "").replace(" พ.ศ.", "").strip()
-                parts = date_text.split()
-
-                if len(parts) != 3:
-                    st.warning(f"❗️ Skipped invalid date format: {date_text}")
-                    continue
-
-                day = int(parts[0])
-                month_thai = parts[1]
-                year_thai = int(parts[2])
+                day = int(parts[1])
+                month_thai = parts[2]
+                year_thai = int(parts[4])
 
                 month = thai_months.get(month_thai)
                 if not month:
-                    st.warning(f"❗️ Unknown month: {month_thai}")
+                    st.warning(f"❗️ ไม่รู้จักชื่อเดือน: {month_thai}")
                     continue
 
                 year = year_thai - 543
                 date_obj = datetime(year, month, day)
+
+                day_name = parts[0].replace("ที่", "")
 
                 record = {
                     "date": date_obj.strftime("%Y-%m-%d"),
@@ -140,16 +104,14 @@ def transform_calendar_dataframe(df, month_name):
                     "summary": col_data[18]
                 }
                 records.append(record)
-
             except Exception as e:
-                st.warning(f"❗️ Error parsing date: {date_text} : {e}")
+                st.warning(f"❗️ Error parsing date from: {full_date_text}: {e}")
                 continue
-
     return records
 
-# ----------------------
-# UI - Streamlit Layout
-# ----------------------
+# ---------------------------
+# UI - Layout
+# ---------------------------
 st.title("📂 Upload Excel ➔ Update MongoDB NoSQL")
 
 option = st.selectbox(
@@ -160,7 +122,6 @@ option = st.selectbox(
 uploaded_file = st.file_uploader("📎 Upload your Excel file:", type=["xlsx"])
 
 if uploaded_file:
-    # อ่านไฟล์ Excel
     xls = pd.ExcelFile(uploaded_file)
     if option == "Calendar Profiles 2568":
         month = st.selectbox("เลือกเดือน:", xls.sheet_names)
@@ -171,7 +132,6 @@ if uploaded_file:
     st.subheader("🔍 Preview Data:")
     st.dataframe(df)
 
-    # เลือกการแปลงข้อมูลตามประเภท
     if option == "นักษัตร (Zodiac Profiles)":
         collection = db["zodiac_profiles"]
         records = transform_zodiac_dataframe(df)
@@ -186,7 +146,6 @@ if uploaded_file:
         if records:
             inserted, updated = 0, 0
             for record in records:
-                record = clean_record(record)
                 if option == "นักษัตร (Zodiac Profiles)":
                     filter_query = {"gender": record["gender"], "zodiac": record["zodiac"]}
                 elif option == "Day Master Profiles":
@@ -209,3 +168,9 @@ if uploaded_file:
         st.dataframe(pd.DataFrame(docs))
     else:
         st.info("📚 No records found in database.")
+
+# ---------------------------
+# Tips
+# ---------------------------
+# - ไปที่ Streamlit Cloud > Secrets > กำหนด MONGO_URI
+# - สามารถขยายฟีเจอร์เช่น Download, Search, Dashboard ต่อได้เลย
