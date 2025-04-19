@@ -51,18 +51,9 @@ def transform_daymaster_dataframe(df):
 
 def transform_calendar_dataframe(df, month_name):
     thai_months = {
-        "มกราคม": 1,
-        "กุมภาพันธ์": 2,
-        "มีนาคม": 3,
-        "เมษายน": 4,
-        "พฤษภาคม": 5,
-        "มิถุนายน": 6,
-        "กรกฎาคม": 7,
-        "สิงหาคม": 8,
-        "กันยายน": 9,
-        "ตุลาคม": 10,
-        "พฤศจิกายน": 11,
-        "ธันวาคม": 12
+        "มกราคม": 1, "กุมภาพันธ์": 2, "มีนาคม": 3, "เมษายน": 4,
+        "พฤษภาคม": 5, "มิถุนายน": 6, "กรกฎาคม": 7, "สิงหาคม": 8,
+        "กันยายน": 9, "ตุลาคม": 10, "พฤศจิกายน": 11, "ธันวาคม": 12
     }
 
     records = []
@@ -125,7 +116,7 @@ if uploaded_file:
     xls = pd.ExcelFile(uploaded_file)
     if option == "Calendar Profiles 2568":
         month = st.selectbox("เลือกเดือน:", xls.sheet_names)
-        df = pd.read_excel(uploaded_file, sheet_name=month)
+        df = pd.read_excel(uploaded_file, sheet_name=month, header=None)  # <--- ใช้ header=None สำหรับ Calendar เท่านั้น
     else:
         df = pd.read_excel(uploaded_file)
 
@@ -173,4 +164,5 @@ if uploaded_file:
 # Tips
 # ---------------------------
 # - ไปที่ Streamlit Cloud > Secrets > กำหนด MONGO_URI
-# - สามารถขยายฟีเจอร์เช่น Download, Search, Dashboard ต่อได้เลย
+# - รองรับ Upload 3 ประเภท
+# - ป้องกัน Error กรณี format ผิด
