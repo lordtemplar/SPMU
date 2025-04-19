@@ -56,16 +56,42 @@ def transform_daymaster_dataframe(df):
 # ฟังก์ชันแปลง DataFrame เป็น List of Dict สำหรับ Calendar Profiles
 # ----------------------
 def transform_calendar_dataframe(df, month_name):
+    thai_months = {
+        "มกราคม": 1,
+        "กุมภาพันธ์": 2,
+        "มีนาคม": 3,
+        "เมษายน": 4,
+        "พฤษภาคม": 5,
+        "มิถุนายน": 6,
+        "กรกฎาคม": 7,
+        "สิงหาคม": 8,
+        "กันยายน": 9,
+        "ตุลาคม": 10,
+        "พฤศจิกายน": 11,
+        "ธันวาคม": 12
+    }
+
     records = []
     for col in df.columns:
         col_data = df[col].dropna().tolist()
         if len(col_data) >= 19:
-            # ดึงวันและวันที่
             full_date_text = col_data[0]
             day_name = full_date_text.split("ที่")[0].strip()
             date_text = full_date_text.split("ที่")[-1].strip()
-            date_obj = datetime.strptime(date_text.replace(" พ.ศ. ", "/"), "%d %B/%Y")
-            date_obj = date_obj.replace(year=date_obj.year - 543)
+
+            try:
+                parts = date_text.replace(" พ.ศ.", "").split()
+                day = int(parts[0])
+                month_thai = parts[1]
+                year_thai = int(parts[2])
+
+                month = thai_months.get(month_thai, 1)
+                year = year_thai - 543
+
+                date_obj = datetime(year, month, day)
+            except Exception as e:
+                st.error(f"❗️ Error parsing date from text: {date_text}")
+                continue
 
             record = {
                 "date": date_obj.strftime("%Y-%m-%d"),
