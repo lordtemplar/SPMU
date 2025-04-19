@@ -16,57 +16,44 @@ db = client[DB_NAME]
 # ฟังก์ชันแปลงข้อมูล
 # ---------------------------
 
+def split_or_single(text):
+    text = str(text).strip()
+    if "•" in text:
+        return [item.strip("• ").strip() for item in text.split("•") if item.strip()]
+    else:
+        return [text] if text else []
+
 def transform_zodiac_dataframe(df):
     records = []
-
-    def split_or_single(text):
-        text = str(text).strip()
-        if "•" in text:
-            return [item.strip("• ").strip() for item in text.split("•") if item.strip()]
-        elif "-" in text:
-            return [item.strip("- ").strip() for item in text.split("-") if item.strip()]
-        else:
-            return [text] if text else []
-
     for _, row in df.iterrows():
         record = {
             "gender": row["เพศ"].strip(),
             "zodiac": row["นักษัตร"].strip(),
-            "characteristics": str(row["ลักษณะโดยทั่วไป"]).strip(),  # String
-            "strengths": split_or_single(row["จุดแข็ง"]),  # List
-            "weaknesses": split_or_single(row["จุดอ่อน"]),  # List
-            "advice_for_balance": split_or_single(row["คำแนะนำเพื่อสร้างสมดุลในชีวิต"]),  # List
-            "charm": str(row["เสน่ห์ที่ดึงดูดใจ"]).strip(),  # String
-            "zodiac_relations": split_or_single(row["นักษัตรสัมพันธ์และปะทะ"]),  # List
-            "summary": str(row["สรุป"]).strip()  # String
+            "characteristics": str(row["ลักษณะโดยทั่วไป"]).strip(),
+            "strengths": split_or_single(row["จุดแข็ง"]),
+            "weaknesses": split_or_single(row["จุดอ่อน"]),
+            "advice_for_balance": split_or_single(row["คำแนะนำเพื่อสร้างสมดุลในชีวิต"]),
+            "charm": str(row["เสน่ห์ที่ดึงดูดใจ"]).strip(),
+            "zodiac_relations": split_or_single(row["นักษัตรสัมพันธ์และปะทะ"]),
+            "summary": str(row["สรุป"]).strip()
         }
         records.append(record)
-
     return records
 
 def transform_daymaster_dataframe(df):
     records = []
-
-    def split_or_single(text):
-        text = str(text).strip()
-        if "•" in text:
-            return [item.strip("• ").strip() for item in text.split("•") if item.strip()]
-        else:
-            return [text] if text else []
-
     for _, row in df.iterrows():
         record = {
             "gender": row["เพศ"].strip(),
             "day_master": row["Day Master"].strip(),
-            "characteristics": str(row["ลักษณะโดยทั่วไป"]).strip(),  # เก็บเป็นข้อความยาว
-            "strengths": split_or_single(row["จุดแข็ง"]),  # ✅ แตกเป็น List
-            "weaknesses": split_or_single(row["จุดอ่อน"]),  # ✅ แตกเป็น List
-            "advice_for_balance": split_or_single(row["คำแนะนำเพื่อสร้างสมดุล"]),  # ✅ แตกเป็น List
-            "charm": str(row["เสน่ห์ที่ดึงดูดใจ"]).strip(),  # ข้อความยาว
-            "summary": str(row["สรุป"]).strip()  # ข้อความยาว
+            "characteristics": str(row["ลักษณะโดยทั่วไป"]).strip(),
+            "strengths": split_or_single(row["จุดแข็ง"]),
+            "weaknesses": split_or_single(row["จุดอ่อน"]),
+            "advice_for_balance": split_or_single(row["คำแนะนำเพื่อสร้างสมดุล"]),
+            "charm": str(row["เสน่ห์ที่ดึงดูดใจ"]).strip(),
+            "summary": str(row["สรุป"]).strip()
         }
         records.append(record)
-
     return records
 
 def transform_calendar_dataframe(df):
