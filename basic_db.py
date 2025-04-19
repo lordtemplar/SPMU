@@ -59,9 +59,11 @@ def transform_calendar_dataframe(df):
     records = []
     for col in df.columns:
         col_data = df[col].dropna().tolist()
-        if len(col_data) >= 20:  # ต้องมี day_quote ด้วย
+
+        if len(col_data) >= 25:
             full_date_text = col_data[0].strip()
             parts = full_date_text.split()
+
             if len(parts) < 5:
                 st.warning(f"❗️ วันที่ format ไม่ครบ: {full_date_text}")
                 continue
@@ -79,10 +81,6 @@ def transform_calendar_dataframe(df):
                 year = year_thai - 543
                 date_obj = datetime(year, month, day)
 
-                # ตัดรายการเป็น list
-                def split_items(text):
-                    return [line.strip() for line in text.split('-') if line.strip()]
-
                 record = {
                     "date": date_obj.strftime("%Y-%m-%d"),
                     "day_name": full_date_text,
@@ -90,17 +88,34 @@ def transform_calendar_dataframe(df):
                     "power_of_day": col_data[3].strip(),
                     "seasonal_effect": col_data[5].strip(),
                     "highlight_of_day": col_data[7].strip(),
-                    "things_to_do": split_items(col_data[10]),
-                    "things_to_avoid": split_items(col_data[12]),
-                    "zodiac_relations": split_items(col_data[14]),
-                    "lucky_colors": split_items(col_data[16]),
-                    "summary": split_items(col_data[18]),
-                    "day_quote": col_data[-1].strip()
+                    "things_to_do": [
+                        col_data[10].strip(),
+                        col_data[11].strip(),
+                        col_data[12].strip()
+                    ],
+                    "things_to_avoid": [
+                        col_data[14].strip(),
+                        col_data[15].strip()
+                    ],
+                    "zodiac_relations": [
+                        col_data[17].strip(),
+                        col_data[18].strip()
+                    ],
+                    "lucky_colors": [
+                        col_data[20].strip(),
+                        col_data[21].strip()
+                    ],
+                    "summary": [
+                        col_data[23].strip()
+                    ],
+                    "day_quote": col_data[24].strip()
                 }
                 records.append(record)
+
             except Exception as e:
                 st.warning(f"❗️ Error parsing date from: {full_date_text}: {e}")
                 continue
+
     return records
 
 # ---------------------------
