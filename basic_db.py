@@ -18,19 +18,30 @@ db = client[DB_NAME]
 
 def transform_zodiac_dataframe(df):
     records = []
+
+    def split_or_single(text):
+        text = str(text).strip()
+        if "•" in text:
+            return [item.strip("• ").strip() for item in text.split("•") if item.strip()]
+        elif "-" in text:
+            return [item.strip("- ").strip() for item in text.split("-") if item.strip()]
+        else:
+            return [text] if text else []
+
     for _, row in df.iterrows():
         record = {
             "gender": row["เพศ"].strip(),
             "zodiac": row["นักษัตร"].strip(),
-            "characteristics": str(row["ลักษณะโดยทั่วไป"]).strip(),
-            "strengths": str(row["จุดแข็ง"]).strip(),
-            "weaknesses": str(row["จุดอ่อน"]).strip(),
-            "advice_for_balance": str(row["คำแนะนำเพื่อสร้างสมดุลในชีวิต"]).strip(),
-            "charm": str(row["เสน่ห์ที่ดึงดูดใจ"]).strip(),
-            "zodiac_relations": str(row["นักษัตรสัมพันธ์และปะทะ"]).strip(),
-            "summary": str(row["สรุป"]).strip()
+            "characteristics": str(row["ลักษณะโดยทั่วไป"]).strip(),  # String
+            "strengths": split_or_single(row["จุดแข็ง"]),  # List
+            "weaknesses": split_or_single(row["จุดอ่อน"]),  # List
+            "advice_for_balance": split_or_single(row["คำแนะนำเพื่อสร้างสมดุลในชีวิต"]),  # List
+            "charm": str(row["เสน่ห์ที่ดึงดูดใจ"]).strip(),  # String
+            "zodiac_relations": split_or_single(row["นักษัตรสัมพันธ์และปะทะ"]),  # List
+            "summary": str(row["สรุป"]).strip()  # String
         }
         records.append(record)
+
     return records
 
 def transform_daymaster_dataframe(df):
