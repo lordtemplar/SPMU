@@ -49,7 +49,7 @@ def transform_daymaster_dataframe(df):
         records.append(record)
     return records
 
-def transform_calendar_dataframe(df, month_name):
+def transform_calendar_dataframe(df):
     thai_months = {
         "มกราคม": 1, "กุมภาพันธ์": 2, "มีนาคม": 3, "เมษายน": 4,
         "พฤษภาคม": 5, "มิถุนายน": 6, "กรกฎาคม": 7, "สิงหาคม": 8,
@@ -79,11 +79,9 @@ def transform_calendar_dataframe(df, month_name):
                 year = year_thai - 543
                 date_obj = datetime(year, month, day)
 
-                day_name = parts[0].replace("ที่", "")
-
                 record = {
                     "date": date_obj.strftime("%Y-%m-%d"),
-                    "day_name": day_name,
+                    "day_name": full_date_text,  # << ใช้วันเต็ม
                     "theme": col_data[1],
                     "power_of_day": col_data[3],
                     "seasonal_effect": col_data[5],
@@ -114,29 +112,51 @@ uploaded_file = st.file_uploader("📎 Upload your Excel file:", type=["xlsx"])
 
 if uploaded_file:
     xls = pd.ExcelFile(uploaded_file)
+
     if option == "Calendar Profiles 2568":
-        month = st.selectbox("เลือกเดือน:", xls.sheet_names)
-        df = pd.read_excel(uploaded_file, sheet_name=month, header=None)  # <--- ใช้ header=None สำหรับ Calendar เท่านั้น
+        upload_mode = st.radio("เลือกรูปแบบการอัปโหลด", ("📅 เดือนเดียว", "📅 ทั้งปี"))
+
+        if upload_mode == "📅 เดือนเดียว":
+            month = st.selectbox("เลือกเดือน:", xls.sheet_names)
+            df = pd.read_excel(uploaded_file, sheet_name=month, header=None)
+            st.subheader(f"🔍 Preview Data: เดือน {month}")
+            st.dataframe(df)
+            all_records = transform_calendar_dataframe(df)
+
+        else:  # 📅 ทั้งปี
+            st.subheader("🔍 Preview Data: ทั้งปี (เฉพาะเดือนแรกที่โชว์)")
+            first_month = xls.sheet_names[0]
+            df = pd.read_excel(uploaded_file, sheet_name=first_month, header=None)
+            st.dataframe(df)
+
+            all_records = []
+            for month in xls.sheet_names:
+                df_month = pd.read_excel(uploaded_file, sheet_name=month, header=None)
+                records = transform_calendar_dataframe(df_month)
+                all_records.extend(records)
+
     else:
         df = pd.read_excel(uploaded_file)
+        st.subheader("🔍 Preview Data:")
+        st.dataframe(df)
 
-    st.subheader("🔍 Preview Data:")
-    st.dataframe(df)
-
-    if option == "นักษัตร (Zodiac Profiles)":
-        collection = db["zodiac_profiles"]
-        records = transform_zodiac_dataframe(df)
-    elif option == "Day Master Profiles":
-        collection = db["daymaster_profiles"]
-        records = transform_daymaster_dataframe(df)
-    else:
-        collection = db["calendar_profiles_2568"]
-        records = transform_calendar_dataframe(df, month)
+        if option == "นักษัตร (Zodiac Profiles)":
+            all_records = transform_zodiac_dataframe(df)
+        else:
+            all_records = transform_daymaster_dataframe(df)
 
     if st.button("💾 Insert/Update Database"):
-        if records:
+        if all_records:
             inserted, updated = 0, 0
-            for record in records:
+
+            if option == "นักษัตร (Zodiac Profiles)":
+                collection = db["zodiac_profiles"]
+            elif option == "Day Master Profiles":
+                collection = db["daymaster_profiles"]
+            else:
+                collection = db["calendar_profiles_2568"]
+
+            for record in all_records:
                 if option == "นักษัตร (Zodiac Profiles)":
                     filter_query = {"gender": record["gender"], "zodiac": record["zodiac"]}
                 elif option == "Day Master Profiles":
@@ -149,12 +169,19 @@ if uploaded_file:
                     updated += 1
                 else:
                     inserted += 1
+
             st.success(f"🚀 Successfully inserted {inserted} and updated {updated} records into {collection.name}!")
         else:
             st.warning("No data to insert!")
 
     st.subheader("📊 Current Database Records:")
-    docs = list(collection.find({}, {"_id": 0}))
+    if option == "นักษัตร (Zodiac Profiles)":
+        docs = list(db["zodiac_profiles"].find({}, {"_id": 0}))
+    elif option == "Day Master Profiles":
+        docs = list(db["daymaster_profiles"].find({}, {"_id": 0}))
+    else:
+        docs = list(db["calendar_profiles_2568"].find({}, {"_id": 0}))
+
     if docs:
         st.dataframe(pd.DataFrame(docs))
     else:
@@ -165,4 +192,4 @@ if uploaded_file:
 # ---------------------------
 # - ไปที่ Streamlit Cloud > Secrets > กำหนด MONGO_URI
 # - รองรับ Upload 3 ประเภท
-# - ป้องกัน Error กรณี format ผิด
+# - รองรับ Upload Calendar ทั้งปีในครั้งเดียว
