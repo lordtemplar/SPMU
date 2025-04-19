@@ -1,7 +1,7 @@
 import streamlit as st
 from zodiac import handle_zodiac_upload
 from daymaster import handle_daymaster_upload
-from calendar import handle_calendar_upload
+from calendar_profiles import handle_calendar_upload
 
 # ---------------------------
 # หน้าเว็บหลัก
