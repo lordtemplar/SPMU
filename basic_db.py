@@ -14,6 +14,18 @@ client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 
 # ----------------------
+# ฟังก์ชันสำหรับทำความสะอาดข้อมูลก่อน Insert
+# ----------------------
+def clean_record(record):
+    cleaned = {}
+    for key, value in record.items():
+        if isinstance(value, str):
+            cleaned[key] = value.strip()
+        else:
+            cleaned[key] = value
+    return cleaned
+
+# ----------------------
 # ฟังก์ชันแปลง DataFrame เป็น List of Dict สำหรับ Zodiac Profiles
 # ----------------------
 def transform_zodiac_dataframe(df):
@@ -165,6 +177,7 @@ if uploaded_file:
         if records:
             inserted, updated = 0, 0
             for record in records:
+                record = clean_record(record)
                 if option == "นักษัตร (Zodiac Profiles)":
                     filter_query = {"gender": record["gender"], "zodiac": record["zodiac"]}
                 elif option == "Day Master Profiles":
