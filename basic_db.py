@@ -59,7 +59,7 @@ def transform_calendar_dataframe(df):
     records = []
     for col in df.columns:
         col_data = df[col].dropna().tolist()
-        if len(col_data) >= 19:
+        if len(col_data) >= 20:  # ต้องมี day_quote ด้วย
             full_date_text = col_data[0].strip()
             parts = full_date_text.split()
             if len(parts) < 5:
@@ -79,18 +79,23 @@ def transform_calendar_dataframe(df):
                 year = year_thai - 543
                 date_obj = datetime(year, month, day)
 
+                # ตัดรายการเป็น list
+                def split_items(text):
+                    return [line.strip() for line in text.split('-') if line.strip()]
+
                 record = {
                     "date": date_obj.strftime("%Y-%m-%d"),
-                    "day_name": full_date_text,  # << ใช้วันเต็ม
-                    "theme": col_data[1],
-                    "power_of_day": col_data[3],
-                    "seasonal_effect": col_data[5],
-                    "highlight_of_day": col_data[7],
-                    "things_to_do": col_data[10],
-                    "things_to_avoid": col_data[12],
-                    "zodiac_relations": col_data[14],
-                    "lucky_colors": col_data[16],
-                    "summary": col_data[18]
+                    "day_name": full_date_text,
+                    "theme": col_data[1].strip(),
+                    "power_of_day": col_data[3].strip(),
+                    "seasonal_effect": col_data[5].strip(),
+                    "highlight_of_day": col_data[7].strip(),
+                    "things_to_do": split_items(col_data[10]),
+                    "things_to_avoid": split_items(col_data[12]),
+                    "zodiac_relations": split_items(col_data[14]),
+                    "lucky_colors": split_items(col_data[16]),
+                    "summary": split_items(col_data[18]),
+                    "day_quote": col_data[-1].strip()
                 }
                 records.append(record)
             except Exception as e:
@@ -124,7 +129,7 @@ if uploaded_file:
             all_records = transform_calendar_dataframe(df)
 
         else:  # 📅 ทั้งปี
-            st.subheader("🔍 Preview Data: ทั้งปี (เฉพาะเดือนแรกที่โชว์)")
+            st.subheader("🔍 Preview Data: ทั้งปี (โชว์เฉพาะเดือนแรก)")
             first_month = xls.sheet_names[0]
             df = pd.read_excel(uploaded_file, sheet_name=first_month, header=None)
             st.dataframe(df)
@@ -186,10 +191,3 @@ if uploaded_file:
         st.dataframe(pd.DataFrame(docs))
     else:
         st.info("📚 No records found in database.")
-
-# ---------------------------
-# Tips
-# ---------------------------
-# - ไปที่ Streamlit Cloud > Secrets > กำหนด MONGO_URI
-# - รองรับ Upload 3 ประเภท
-# - รองรับ Upload Calendar ทั้งปีในครั้งเดียว
