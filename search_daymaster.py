@@ -30,34 +30,25 @@ def find_profile(profiles, field, keyword):
     return None
 
 # ------------------------------
-# แปลงวันที่เป็นรูปแบบ text ตรงกับฐานข้อมูล
+# แปลงวันที่ให้ตรงรูปแบบในฐานข้อมูล
 # ------------------------------
-def format_thai_date(date_obj):
-    thai_months = [
-        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
-    ]
-    day = date_obj.day
-    month = thai_months[date_obj.month - 1]
-    year = date_obj.year
-    return f"{year}-{date_obj.month:02d}-{date_obj.day:02d}"
+def format_mongo_date(date_obj):
+    return f"{date_obj.year}-{date_obj.month:02d}-{date_obj.day:02d}"
 
 # ------------------------------
 # เริ่มต้นหน้าเว็บ Streamlit
 # ------------------------------
 st.set_page_config(page_title="Profiles Explorer", page_icon="🌟")
-
 st.title("🌟 ระบบค้นหาข้อมูล Profiles 🌟")
 
 # ------------------------------
-# เลือกประเภทการค้นหา
+# เลือกประเภทข้อมูล
 # ------------------------------
 search_type = st.radio(
     "เลือกประเภทข้อมูลที่ต้องการค้นหา",
     ("Day Master (ธาตุประจำตัว)", "Zodiac Profile (นักสัตว์)", "Calendar Profile (ปฏิทิน)")
 )
 
-# Mapping
 collection_map = {
     "Day Master (ธาตุประจำตัว)": "daymaster_profiles",
     "Zodiac Profile (นักสัตว์)": "zodiac_profiles",
@@ -79,10 +70,9 @@ search_field = field_map[search_type]
 profiles = load_profiles(selected_collection)
 
 # ------------------------------
-# ค้นหา และ แสดงข้อมูล
+# ช่องค้นหา + แสดงผล
 # ------------------------------
 if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac Profile (นักสัตว์)"):
-    # Dropdown ให้เลือก
     options = sorted({profile.get(search_field, "ไม่ระบุ") for profile in profiles})
     selected_option = st.selectbox(f"เลือก {search_type}", options)
 
@@ -93,7 +83,6 @@ if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac 
             st.success(f"✅ พบข้อมูลเกี่ยวกับ {selected_option}")
 
             if search_type == "Day Master (ธาตุประจำตัว)":
-                # แสดงข้อมูล Day Master
                 st.subheader(f"ธาตุ: {profile.get('day_master', '-')}")
                 st.markdown(f"**ลักษณะทั่วไป:** {profile.get('characteristics', '-')}")
                 st.markdown("**จุดแข็ง:**")
@@ -108,7 +97,6 @@ if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac 
                 st.markdown(f"**เสน่ห์ที่ดึงดูดใจ:** {profile.get('charm', '-')}")
 
             elif search_type == "Zodiac Profile (นักสัตว์)":
-                # แสดงข้อมูล Zodiac
                 st.subheader(f"นักษัตร: {profile.get('zodiac', '-')}")
                 st.markdown(f"**ลักษณะทั่วไป:** {profile.get('characteristics', '-')}")
                 st.markdown("**จุดแข็ง:**")
@@ -117,9 +105,8 @@ if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac 
                 st.markdown("**จุดอ่อน:**")
                 for weakness in profile.get('weaknesses', []):
                     st.write(f"- {weakness}")
-                st.markdown("**เสน่ห์:**")
-                st.write(profile.get('charm', '-'))
-                st.markdown("**คำแนะนำเพื่อสร้างสมดุล:**")
+                st.markdown(f"**เสน่ห์:** {profile.get('charm', '-')}")
+                st.markdown("**คำแนะนำเพื่อสมดุล:**")
                 for advice in profile.get('advice_for_balance', []):
                     st.write(f"- {advice}")
                 st.markdown("**ความสัมพันธ์กับนักษัตรอื่น:**")
@@ -130,15 +117,18 @@ if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac 
             st.error("❌ ไม่พบข้อมูล")
 
 elif search_type == "Calendar Profile (ปฏิทิน)":
-    # ใช้ Date Picker
+    # ตั้งต้นวันวันนี้ (เช็คให้อยู่ในปี 2025)
+    today = datetime.date.today()
+    default_date = today if datetime.date(2025, 1, 1) <= today <= datetime.date(2025, 12, 31) else datetime.date(2025, 1, 1)
+
     selected_date = st.date_input(
         "เลือกวัน เดือน ปี",
-        value=datetime.date(2025, 1, 1),
+        value=default_date,
         min_value=datetime.date(2025, 1, 1),
         max_value=datetime.date(2025, 12, 31)
     )
 
-    formatted_date = format_thai_date(selected_date)
+    formatted_date = format_mongo_date(selected_date)
 
     st.info(f"🔍 กำลังค้นหาวันที่: {formatted_date}")
 
@@ -167,3 +157,4 @@ elif search_type == "Calendar Profile (ปฏิทิน)":
 
     else:
         st.error(f"❌ ไม่พบข้อมูลสำหรับวันที่ {formatted_date}")
+
