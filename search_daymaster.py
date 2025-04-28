@@ -1,7 +1,6 @@
-# streamlit_app.py
-
 import streamlit as st
 from pymongo import MongoClient
+import datetime
 
 # ------------------------------
 # เชื่อมต่อ MongoDB ด้วย Secret
@@ -26,7 +25,7 @@ def load_profiles(collection_name):
 # ------------------------------
 def find_profile(profiles, field, keyword):
     for profile in profiles:
-        if keyword in str(profile.get(field, "")):
+        if keyword == str(profile.get(field, "")):
             return profile
     return None
 
@@ -54,8 +53,8 @@ collection_map = {
 
 field_map = {
     "Day Master (ธาตุประจำตัว)": "day_master",
-    "Zodiac Profile (นักสัตว์)": "zodiac_sign",  # สมมุติว่า field ชื่อ zodiac_sign
-    "Calendar Profile (ปฏิทิน)": "date"  # สมมุติว่า field ชื่อ date เช่น "1 มกราคม 2568"
+    "Zodiac Profile (นักสัตว์)": "zodiac_sign",  # สมมุติ field ชื่อนี้
+    "Calendar Profile (ปฏิทิน)": "date"  # สมมุติ field เป็น text เช่น "1 มกราคม 2568"
 }
 
 selected_collection = collection_map[search_type]
@@ -67,22 +66,51 @@ search_field = field_map[search_type]
 profiles = load_profiles(selected_collection)
 
 # ------------------------------
-# ช่องค้นหา
+# UI ค้นหา
 # ------------------------------
-search_keyword = st.text_input(f"🔎 พิมพ์ {search_field} ที่ต้องการค้นหา:")
 
-if search_keyword:
-    profile = find_profile(profiles, search_field, search_keyword)
+if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac Profile (นักสัตว์)"):
+    # ใช้ Dropdown
+    options = sorted({profile.get(search_field, "ไม่ระบุ") for profile in profiles})
+    selected_option = st.selectbox(f"เลือก {search_type}", options)
+
+    if selected_option:
+        profile = find_profile(profiles, search_field, selected_option)
+
+        if profile:
+            st.success(f"✅ พบข้อมูลเกี่ยวกับ {selected_option}")
+            st.json(profile)
+        else:
+            st.error("❌ ไม่พบข้อมูล")
+
+elif search_type == "Calendar Profile (ปฏิทิน)":
+    # ใช้ Date Picker
+    selected_date = st.date_input(
+        "เลือกวัน เดือน ปี",
+        value=datetime.date(2025, 1, 1),
+        min_value=datetime.date(2025, 1, 1),
+        max_value=datetime.date(2025, 12, 31)
+    )
+
+    # แปลงวันที่เป็นรูปแบบตรงกับในฐานข้อมูล เช่น "1 มกราคม 2568"
+    thai_months = [
+        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ]
+
+    day = selected_date.day
+    month = thai_months[selected_date.month - 1]
+    year = selected_date.year + 543  # แปลงเป็น พ.ศ.
+
+    formatted_date = f"{day} {month} {year}"
+
+    st.info(f"🔍 กำลังค้นหาวันที่: {formatted_date}")
+
+    profile = find_profile(profiles, search_field, formatted_date)
 
     if profile:
-        st.success(f"✅ พบข้อมูลที่ตรงกับ {search_keyword}")
-
-        # แสดงข้อมูลโปรไฟล์
+        st.success(f"✅ พบข้อมูลสำหรับวันที่ {formatted_date}")
         st.json(profile)
-
     else:
-        st.error(f"❌ ไม่พบข้อมูลที่เกี่ยวข้องกับ \"{search_keyword}\"")
-
-else:
-    st.info("ℹ️ กรุณากรอกคำค้นหา")
+        st.error(f"❌ ไม่พบข้อมูลวันที่ {formatted_date}")
 
