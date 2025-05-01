@@ -14,6 +14,7 @@ def extract_prompt_sections(text):
     }
 
     lines = str(text).splitlines()
+    buffer_guidelines = []
     current_section = "description"
 
     for line in lines:
@@ -32,17 +33,30 @@ def extract_prompt_sections(text):
             continue
 
         if current_section == "description":
-            sections["description"] += line + " "
+            if "ให้คำตอบเป็นไปตามแนวทาง" in line:
+                # ตัด description กับส่วนแนวทาง
+                before, after = line.split("ให้คำตอบเป็นไปตามแนวทาง", 1)
+                sections["description"] += before.strip() + " ให้คำตอบเป็นไปตามแนวทางดังต่อไปนี้:"
+                buffer_guidelines.append(after.strip())
+                current_section = "guidelines"
+            else:
+                sections["description"] += line + " "
+
         elif current_section == "guidelines":
-            clean = line.strip("●✅- ").strip()
-            if clean:
-                sections["guidelines"].append(clean)
+            buffer_guidelines.append(line)
+
         elif current_section == "criteria":
             clean = line.strip("●✅- ").strip()
             if clean:
                 sections["criteria"].append(clean)
+
         elif current_section == "objective":
             sections["objective"] += line + " "
+
+    if buffer_guidelines:
+        # รวมทุกบรรทัดแนวทางเป็น 1 ข้อใน list
+        guideline_combined = " ".join(buffer_guidelines).strip()
+        sections["guidelines"] = [guideline_combined]
 
     sections["description"] = sections["description"].strip()
     sections["objective"] = sections["objective"].strip()
