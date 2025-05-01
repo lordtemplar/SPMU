@@ -163,7 +163,8 @@ elif search_type == "AI Prompt":
             st.markdown(f"**ลำดับ:** {prompt.get('order', '-')}")
             st.markdown(f"**API1:** `{prompt.get('api1', '-')}`")
             st.markdown(f"**API2:** `{prompt.get('api2', '-')}`")
-            st.markdown("**รายละเอียด:**")
-            st.markdown(prompt.get("description", "-").strip(), unsafe_allow_html=True)
+            st.markdown("**Prompt:**")
+            st.markdown(prompt.get("prompt", "-").strip(), unsafe_allow_html=True)
     else:
         st.warning("❌ ไม่พบข้อมูล AI Prompt")
+
