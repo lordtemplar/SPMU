@@ -1,6 +1,7 @@
 import streamlit as st
 from pymongo import MongoClient
 import datetime
+import pandas as pd
 
 # ------------------------------
 # เชื่อมต่อ MongoDB ด้วย Secret
@@ -12,26 +13,19 @@ client = MongoClient(MONGO_URI)
 db = client[DATABASE_NAME]
 
 # ------------------------------
-# โหลดข้อมูลทั้งหมดจาก Collection
+# โหลดข้อมูลจาก Collection
 # ------------------------------
 @st.cache_data
 def load_profiles(collection_name):
     collection = db[collection_name]
-    profiles = list(collection.find({}))
-    return profiles
+    return list(collection.find({}))
 
-# ------------------------------
-# หาโปรไฟล์จากคีย์เวิร์ด
-# ------------------------------
 def find_profile(profiles, field, keyword):
     for profile in profiles:
         if keyword == str(profile.get(field, "")):
             return profile
     return None
 
-# ------------------------------
-# แปลงวันที่ให้ตรงรูปแบบในฐานข้อมูล
-# ------------------------------
 def format_mongo_date(date_obj):
     return f"{date_obj.year}-{date_obj.month:02d}-{date_obj.day:02d}"
 
@@ -46,13 +40,14 @@ st.title("🌟 ระบบค้นหาข้อมูล Profiles 🌟")
 # ------------------------------
 search_type = st.radio(
     "เลือกประเภทข้อมูลที่ต้องการค้นหา",
-    ("Day Master (ธาตุประจำตัว)", "Zodiac Profile (นักสัตว์)", "Calendar Profile (ปฏิทิน)")
+    ("Day Master (ธาตุประจำตัว)", "Zodiac Profile (นักสัตว์)", "Calendar Profile (ปฏิทิน)", "AI Prompt")
 )
 
 collection_map = {
     "Day Master (ธาตุประจำตัว)": "daymaster_profiles",
     "Zodiac Profile (นักสัตว์)": "zodiac_profiles",
-    "Calendar Profile (ปฏิทิน)": "calendar_profiles_2568"
+    "Calendar Profile (ปฏิทิน)": "calendar_profiles_2568",
+    "AI Prompt": "ai_prompts"
 }
 
 field_map = {
@@ -62,15 +57,12 @@ field_map = {
 }
 
 selected_collection = collection_map[search_type]
-search_field = field_map[search_type]
+search_field = field_map.get(search_type, None)
 
-# ------------------------------
-# โหลดข้อมูล
-# ------------------------------
 profiles = load_profiles(selected_collection)
 
 # ------------------------------
-# ช่องค้นหา + แสดงผล
+# ส่วนแสดงผลตามประเภทข้อมูล
 # ------------------------------
 if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac Profile (นักสัตว์)"):
     options = sorted({profile.get(search_field, "ไม่ระบุ") for profile in profiles})
@@ -117,7 +109,6 @@ if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac 
             st.error("❌ ไม่พบข้อมูล")
 
 elif search_type == "Calendar Profile (ปฏิทิน)":
-    # ตั้งต้นวันวันนี้ (เช็คให้อยู่ในปี 2025)
     today = datetime.date.today()
     default_date = today if datetime.date(2025, 1, 1) <= today <= datetime.date(2025, 12, 31) else datetime.date(2025, 1, 1)
 
@@ -129,10 +120,8 @@ elif search_type == "Calendar Profile (ปฏิทิน)":
     )
 
     formatted_date = format_mongo_date(selected_date)
-
     st.info(f"🔍 กำลังค้นหาวันที่: {formatted_date}")
-
-    profile = find_profile(profiles, search_field, formatted_date)
+    profile = find_profile(profiles, "date", formatted_date)
 
     if profile:
         st.success(f"✅ พบข้อมูลสำหรับวันที่ {formatted_date}")
@@ -154,7 +143,20 @@ elif search_type == "Calendar Profile (ปฏิทิน)":
         st.markdown("**ความสัมพันธ์ตามนักษัตร:**")
         for relation in profile.get('zodiac_relations', []):
             st.write(f"- {relation}")
-
     else:
         st.error(f"❌ ไม่พบข้อมูลสำหรับวันที่ {formatted_date}")
 
+elif search_type == "AI Prompt":
+    st.info("📘 แสดงรายการ AI Prompts ทั้งหมด")
+    if profiles:
+        sorted_prompts = sorted(profiles, key=lambda x: x.get("order", 9999))
+        df = pd.DataFrame([{
+            "ลำดับ": p.get("order", ""),
+            "หัวข้อ": p.get("topic", ""),
+            "API1": p.get("api1", "-"),
+            "API2": p.get("api2", "-"),
+            "รายละเอียด": p.get("description", "").strip()
+        } for p in sorted_prompts])
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.warning("❌ ไม่พบข้อมูล AI Prompt")
