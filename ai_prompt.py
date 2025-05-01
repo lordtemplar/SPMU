@@ -2,6 +2,46 @@ import pandas as pd
 import streamlit as st
 from db import db
 
+def extract_prompt_sections(text):
+    sections = {
+        "description": "",
+        "guidelines": [],
+        "criteria": [],
+        "objective": ""
+    }
+
+    lines = str(text).splitlines()
+    mode = "description"
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        if line.startswith("ให้คำตอบเป็นไปตามแนวทาง"):
+            mode = "guidelines"
+            continue
+        elif line.startswith("หลักเกณฑ์ในการให้คำตอบ"):
+            mode = "criteria"
+            continue
+        elif line.startswith("เป้าหมาย"):
+            mode = "objective"
+            continue
+
+        if mode == "description":
+            sections["description"] += line + " "
+        elif mode == "guidelines":
+            sections["guidelines"].append(line.strip("● ").strip("- ").strip("✅ ").strip())
+        elif mode == "criteria":
+            sections["criteria"].append(line.strip("● ").strip("- ").strip("✅ ").strip())
+        elif mode == "objective":
+            sections["objective"] += line + " "
+
+    # Clean up whitespace
+    sections["description"] = sections["description"].strip()
+    sections["objective"] = sections["objective"].strip()
+    return sections
+
 def handle_ai_prompt_upload(uploaded_file):
     df = pd.read_excel(uploaded_file)
     st.subheader("🔍 Preview Data:")
@@ -9,12 +49,13 @@ def handle_ai_prompt_upload(uploaded_file):
 
     records = []
     for _, row in df.iterrows():
+        parsed_prompt = extract_prompt_sections(row["Prompt"])
         record = {
             "order": int(row["ลำดับคำถาม"]),
             "topic": str(row["หัวข้อ"]).strip(),
             "api1": str(row["API1"]).strip() if pd.notna(row["API1"]) else "-",
             "api2": str(row["API2"]).strip() if pd.notna(row["API2"]) else "-",
-            "prompt": str(row["Prompt"]).strip()
+            "prompt": parsed_prompt
         }
         records.append(record)
 
