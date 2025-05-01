@@ -40,7 +40,12 @@ st.title("🌟 ระบบค้นหาข้อมูล Profiles 🌟")
 # ------------------------------
 search_type = st.radio(
     "เลือกประเภทข้อมูลที่ต้องการค้นหา",
-    ("Day Master (ธาตุประจำตัว)", "Zodiac Profile (นักสัตว์)", "Calendar Profile (ปฏิทิน)", "AI Prompt")
+    (
+        "Day Master (ธาตุประจำตัว)",
+        "Zodiac Profile (นักสัตว์)",
+        "Calendar Profile (ปฏิทิน)",
+        "AI Prompt"
+    )
 )
 
 collection_map = {
@@ -58,14 +63,13 @@ field_map = {
 
 selected_collection = collection_map[search_type]
 search_field = field_map.get(search_type, None)
-
 profiles = load_profiles(selected_collection)
 
 # ------------------------------
-# ส่วนแสดงผลตามประเภทข้อมูล
+# แสดงข้อมูลตามประเภท
 # ------------------------------
 if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac Profile (นักสัตว์)"):
-    options = sorted({profile.get(search_field, "ไม่ระบุ") for profile in profiles})
+    options = sorted({p.get(search_field, "ไม่ระบุ") for p in profiles})
     selected_option = st.selectbox(f"เลือก {search_type}", options)
 
     if selected_option:
@@ -78,35 +82,33 @@ if search_type in ("Day Master (ธาตุประจำตัว)", "Zodiac 
                 st.subheader(f"ธาตุ: {profile.get('day_master', '-')}")
                 st.markdown(f"**ลักษณะทั่วไป:** {profile.get('characteristics', '-')}")
                 st.markdown("**จุดแข็ง:**")
-                for strength in profile.get('strengths', []):
-                    st.write(f"- {strength}")
+                for item in profile.get('strengths', []):
+                    st.write(f"- {item}")
                 st.markdown("**จุดอ่อน:**")
-                for weakness in profile.get('weaknesses', []):
-                    st.write(f"- {weakness}")
-                st.markdown("**คำแนะนำเพื่อสร้างสมดุลในชีวิต:**")
-                for advice in profile.get('advice_for_balance', []):
-                    st.write(f"- {advice}")
-                st.markdown(f"**เสน่ห์ที่ดึงดูดใจ:** {profile.get('charm', '-')}")
+                for item in profile.get('weaknesses', []):
+                    st.write(f"- {item}")
+                st.markdown("**คำแนะนำเพื่อสมดุลชีวิต:**")
+                for item in profile.get('advice_for_balance', []):
+                    st.write(f"- {item}")
+                st.markdown(f"**เสน่ห์:** {profile.get('charm', '-')}")
 
             elif search_type == "Zodiac Profile (นักสัตว์)":
                 st.subheader(f"นักษัตร: {profile.get('zodiac', '-')}")
                 st.markdown(f"**ลักษณะทั่วไป:** {profile.get('characteristics', '-')}")
                 st.markdown("**จุดแข็ง:**")
-                for strength in profile.get('strengths', []):
-                    st.write(f"- {strength}")
+                for item in profile.get('strengths', []):
+                    st.write(f"- {item}")
                 st.markdown("**จุดอ่อน:**")
-                for weakness in profile.get('weaknesses', []):
-                    st.write(f"- {weakness}")
-                st.markdown(f"**เสน่ห์:** {profile.get('charm', '-')}")
+                for item in profile.get('weaknesses', []):
+                    st.write(f"- {item}")
+                st.markdown("**เสน่ห์:**")
+                st.write(profile.get('charm', '-'))
                 st.markdown("**คำแนะนำเพื่อสมดุล:**")
-                for advice in profile.get('advice_for_balance', []):
-                    st.write(f"- {advice}")
+                for item in profile.get('advice_for_balance', []):
+                    st.write(f"- {item}")
                 st.markdown("**ความสัมพันธ์กับนักษัตรอื่น:**")
-                for relation in profile.get('zodiac_relations', []):
-                    st.write(f"- {relation}")
-
-        else:
-            st.error("❌ ไม่พบข้อมูล")
+                for item in profile.get('zodiac_relations', []):
+                    st.write(f"- {item}")
 
 elif search_type == "Calendar Profile (ปฏิทิน)":
     today = datetime.date.today()
@@ -120,8 +122,9 @@ elif search_type == "Calendar Profile (ปฏิทิน)":
     )
 
     formatted_date = format_mongo_date(selected_date)
-    st.info(f"🔍 กำลังค้นหาวันที่: {formatted_date}")
     profile = find_profile(profiles, "date", formatted_date)
+
+    st.info(f"🔍 กำลังค้นหาวันที่: {formatted_date}")
 
     if profile:
         st.success(f"✅ พบข้อมูลสำหรับวันที่ {formatted_date}")
@@ -132,31 +135,35 @@ elif search_type == "Calendar Profile (ปฏิทิน)":
         st.markdown(f"**พลังของวัน:** {profile.get('power_of_day', '-')}")
         st.markdown(f"**ผลของฤดูกาล:** {profile.get('seasonal_effect', '-')}")
         st.markdown("**สีมงคลและสีที่ควรหลีกเลี่ยง:**")
-        for color in profile.get('lucky_colors', []):
-            st.write(f"- {color}")
+        for item in profile.get('lucky_colors', []):
+            st.write(f"- {item}")
         st.markdown("**สิ่งที่ควรทำ:**")
-        for todo in profile.get('things_to_do', []):
-            st.write(f"- {todo}")
+        for item in profile.get('things_to_do', []):
+            st.write(f"- {item}")
         st.markdown("**สิ่งที่ควรหลีกเลี่ยง:**")
-        for avoid in profile.get('things_to_avoid', []):
-            st.write(f"- {avoid}")
+        for item in profile.get('things_to_avoid', []):
+            st.write(f"- {item}")
         st.markdown("**ความสัมพันธ์ตามนักษัตร:**")
-        for relation in profile.get('zodiac_relations', []):
-            st.write(f"- {relation}")
+        for item in profile.get('zodiac_relations', []):
+            st.write(f"- {item}")
     else:
         st.error(f"❌ ไม่พบข้อมูลสำหรับวันที่ {formatted_date}")
 
 elif search_type == "AI Prompt":
-    st.info("📘 แสดงรายการ AI Prompts ทั้งหมด")
+    st.info("📘 เลือกหัวข้อ AI Prompt เพื่อดูรายละเอียด")
+
     if profiles:
-        sorted_prompts = sorted(profiles, key=lambda x: x.get("order", 9999))
-        df = pd.DataFrame([{
-            "ลำดับ": p.get("order", ""),
-            "หัวข้อ": p.get("topic", ""),
-            "API1": p.get("api1", "-"),
-            "API2": p.get("api2", "-"),
-            "รายละเอียด": p.get("description", "").strip()
-        } for p in sorted_prompts])
-        st.dataframe(df, use_container_width=True)
+        topic_map = {p.get("topic", "ไม่ระบุหัวข้อ"): p for p in profiles}
+        topic_names = sorted(topic_map.keys())
+        selected_topic = st.selectbox("เลือกหัวข้อ AI Prompt", topic_names)
+
+        if selected_topic:
+            prompt = topic_map[selected_topic]
+            st.subheader(f"🧠 หัวข้อ: {prompt.get('topic', '-')}")
+            st.markdown(f"**ลำดับ:** {prompt.get('order', '-')}")
+            st.markdown(f"**API1:** `{prompt.get('api1', '-')}`")
+            st.markdown(f"**API2:** `{prompt.get('api2', '-')}`")
+            st.markdown("**รายละเอียด:**")
+            st.markdown(prompt.get("description", "-").strip(), unsafe_allow_html=True)
     else:
         st.warning("❌ ไม่พบข้อมูล AI Prompt")
