@@ -3,7 +3,7 @@ import streamlit as st
 from db import db
 
 # ---------------------------------
-# แยก prompt เป็น section ย่อย
+# แยก prompt เป็น section ย่อย พร้อมแยก ● ใน guidelines เป็น list
 # ---------------------------------
 def extract_prompt_sections(text):
     sections = {
@@ -34,7 +34,6 @@ def extract_prompt_sections(text):
 
         if current_section == "description":
             if "ให้คำตอบเป็นไปตามแนวทาง" in line:
-                # ตัด description กับส่วนแนวทาง
                 before, after = line.split("ให้คำตอบเป็นไปตามแนวทาง", 1)
                 sections["description"] += before.strip() + " ให้คำตอบเป็นไปตามแนวทางดังต่อไปนี้:"
                 buffer_guidelines.append(after.strip())
@@ -53,10 +52,12 @@ def extract_prompt_sections(text):
         elif current_section == "objective":
             sections["objective"] += line + " "
 
-    if buffer_guidelines:
-        # รวมทุกบรรทัดแนวทางเป็น 1 ข้อใน list
-        guideline_combined = " ".join(buffer_guidelines).strip()
-        sections["guidelines"] = [guideline_combined]
+    # ✅ แยก bullet point `●` ออกจาก buffer_guidelines
+    guideline_text = " ".join(buffer_guidelines)
+    if "●" in guideline_text:
+        sections["guidelines"] = [item.strip("● ").strip() for item in guideline_text.split("●") if item.strip()]
+    else:
+        sections["guidelines"] = [guideline_text.strip()] if guideline_text.strip() else []
 
     sections["description"] = sections["description"].strip()
     sections["objective"] = sections["objective"].strip()
