@@ -10,11 +10,11 @@ def handle_ai_prompt_upload(uploaded_file):
     records = []
     for _, row in df.iterrows():
         record = {
-            "order": int(row["ลำดับ"]),
+            "order": int(row["ลำดับคำถาม"]),
             "topic": str(row["หัวข้อ"]).strip(),
             "api1": str(row["API1"]).strip() if pd.notna(row["API1"]) else "-",
             "api2": str(row["API2"]).strip() if pd.notna(row["API2"]) else "-",
-            "description": str(row["รายละเอียด"]).strip()
+            "prompt": str(row["Prompt"]).strip()
         }
         records.append(record)
 
