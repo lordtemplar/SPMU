@@ -1,9 +1,10 @@
 import pandas as pd
 import streamlit as st
-from db import db
 from datetime import datetime
+from db import db  # ดึงการเชื่อมต่อจาก db.py
 
 def handle_calendar_upload(uploaded_file):
+    # โหลดไฟล์ Excel
     xls = pd.ExcelFile(uploaded_file)
     month = st.selectbox("เลือกเดือน:", xls.sheet_names)
     df = pd.read_excel(uploaded_file, sheet_name=month)
@@ -11,7 +12,9 @@ def handle_calendar_upload(uploaded_file):
     st.subheader("🔍 Preview Data:")
     st.dataframe(df)
 
-    records = transform_calendar_dataframe(df, month)
+    # แปลงข้อมูล
+    records = transform_calendar_dataframe(df)
+
     collection = db["calendar_profiles_2568"]
 
     if st.button("💾 Insert/Update Database"):
@@ -29,6 +32,7 @@ def handle_calendar_upload(uploaded_file):
         else:
             st.warning("No data to insert!")
 
+    # แสดงข้อมูลปัจจุบัน
     st.subheader("📊 Current Database Records:")
     docs = list(collection.find({}, {"_id": 0}))
     if docs:
@@ -36,17 +40,19 @@ def handle_calendar_upload(uploaded_file):
     else:
         st.info("📚 No records found in database.")
 
-def transform_calendar_dataframe(df, month_name):
+def transform_calendar_dataframe(df):
     thai_months = {
         "มกราคม": 1, "กุมภาพันธ์": 2, "มีนาคม": 3, "เมษายน": 4,
         "พฤษภาคม": 5, "มิถุนายน": 6, "กรกฎาคม": 7, "สิงหาคม": 8,
         "กันยายน": 9, "ตุลาคม": 10, "พฤศจิกายน": 11, "ธันวาคม": 12
     }
+
     records = []
 
     for col in df.columns:
         col_data = df[col].dropna().tolist()
         if len(col_data) >= 25:
+            # หา date text
             full_date_text = next((t for t in col_data if t.startswith("วัน") and "ที่" in t), None)
             if not full_date_text:
                 continue
@@ -69,7 +75,7 @@ def transform_calendar_dataframe(df, month_name):
             year = year_thai - 543
             date_obj = datetime(year, month, day)
 
-            # ✅ จัดการให้ columns เป็น list ถูกต้อง
+            # จัดการข้อมูล list
             things_to_do = [col_data[10], col_data[11], col_data[12]]
             things_to_avoid = [col_data[14], col_data[15], col_data[16]]
             zodiac_relations = [col_data[18], col_data[19]]
